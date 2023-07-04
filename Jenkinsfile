@@ -1,18 +1,37 @@
 pipeline {
     agent any
+    options {
+        skipStagesAfterUnstable()
+    }
     stages {
-        stage('Build') {
-            agent {
-                docker {
-                    image 'gradle:6.7-jdk11'
-                    // Run the container on the node specified at the
-                    // top-level of the Pipeline, in the same workspace,
-                    // rather than on a new node entirely:
-                    reuseNode true
+         stage('Clone repository') { 
+            steps { 
+                script{
+                checkout scm
                 }
             }
+        }
+
+        stage('Build') { 
+            steps { 
+                script{
+                 app = docker.build("underwater")
+                }
+            }
+        }
+        stage('Test'){
             steps {
-                sh 'gradle --version'
+                 echo 'Empty'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script{
+                        docker.withRegistry('https://647462188385.dkr.ecr.us-west-2.amazonaws.com', 'ecr:us-west-2:aws-credentials') {
+                    app.push("${env.BUILD_NUMBER}")
+                    app.push("latest")
+                    }
+                }
             }
         }
     }
